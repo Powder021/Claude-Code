@@ -98,6 +98,7 @@ import { queryCheckpoint } from './utils/queryProfiler.js'
 import { runTools } from './services/tools/toolOrchestration.js'
 import { applyToolResultBudget } from './utils/toolResultStorage.js'
 import { recordContentReplacement } from './utils/sessionStorage.js'
+import { logAPIRequest, logAPIResponse } from './utils/trajectoryLogger.js'
 import { handleStopHooks } from './query/stopHooks.js'
 import { buildQueryConfig } from './query/config.js'
 import { productionDeps, type QueryDeps } from './query/deps.js'
@@ -656,6 +657,14 @@ async function* queryLoop(
         try {
           let streamingFallbackOccured = false
           queryCheckpoint('query_api_streaming_start')
+          // --- Trajectory logging: capture the full API request ---
+          logAPIRequest({
+            systemPrompt: fullSystemPrompt,
+            messages: prependUserContext(messagesForQuery, userContext),
+            tools: toolUseContext.options.tools,
+            model: currentModel,
+            thinkingConfig: toolUseContext.options.thinkingConfig,
+          }).catch(() => {}) // fire-and-forget, never block the query
           for await (const message of deps.callModel({
             messages: prependUserContext(messagesForQuery, userContext),
             systemPrompt: fullSystemPrompt,
@@ -862,6 +871,8 @@ async function* queryLoop(
             }
           }
           queryCheckpoint('query_api_streaming_end')
+          // --- Trajectory logging: capture the full API response ---
+          logAPIResponse(assistantMessages).catch(() => {})
 
           // Yield deferred microcompact boundary message using actual API-reported
           // token deletion count instead of client-side estimates.

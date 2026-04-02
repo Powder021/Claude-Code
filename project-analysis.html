@@ -1,0 +1,1626 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Claude Code - 项目完整解析</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg-card: #161b22;
+    --bg-card-hover: #1c2333;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-muted: #8b949e;
+    --accent: #58a6ff;
+    --accent2: #bc8cff;
+    --accent3: #3fb950;
+    --accent4: #f0883e;
+    --accent5: #f778ba;
+    --gradient1: linear-gradient(135deg, #58a6ff 0%, #bc8cff 100%);
+    --gradient2: linear-gradient(135deg, #3fb950 0%, #58a6ff 100%);
+    --gradient3: linear-gradient(135deg, #f0883e 0%, #f778ba 100%);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+  /* Hero */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 30% 40%, rgba(88,166,255,0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 60%, rgba(188,140,255,0.06) 0%, transparent 50%),
+                radial-gradient(circle at 50% 80%, rgba(63,185,80,0.04) 0%, transparent 50%);
+    animation: heroBg 20s ease-in-out infinite;
+  }
+
+  @keyframes heroBg {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    33% { transform: translate(2%, -1%) rotate(1deg); }
+    66% { transform: translate(-1%, 2%) rotate(-1deg); }
+  }
+
+  .hero-content { position: relative; z-index: 1; max-width: 900px; }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(88,166,255,0.1);
+    border: 1px solid rgba(88,166,255,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    color: var(--accent);
+    margin-bottom: 2rem;
+  }
+
+  .hero-badge .dot {
+    width: 8px; height: 8px;
+    background: var(--accent3);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .hero h1 {
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800;
+    background: var(--gradient1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1rem;
+    letter-spacing: -1px;
+  }
+
+  .hero .subtitle {
+    font-size: clamp(1rem, 2vw, 1.3rem);
+    color: var(--text-muted);
+    max-width: 700px;
+    margin: 0 auto 2.5rem;
+  }
+
+  .hero-stats {
+    display: flex;
+    gap: 2rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    text-align: center;
+    padding: 1rem 1.5rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    min-width: 130px;
+    transition: all 0.3s;
+  }
+
+  .stat-item:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+  .stat-num {
+    font-size: 2rem;
+    font-weight: 700;
+    background: var(--gradient1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .stat-label { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+  .scroll-hint {
+    position: absolute;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    animation: bounce 2s infinite;
+    z-index: 1;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(8px); }
+  }
+
+  /* Navigation */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13,17,23,0.85);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+  }
+
+  .nav-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    padding: 0.75rem 0;
+  }
+
+  .nav-inner::-webkit-scrollbar { display: none; }
+
+  .nav-link {
+    white-space: nowrap;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+  }
+
+  .nav-link:hover, .nav-link.active {
+    color: var(--text);
+    background: rgba(255,255,255,0.06);
+  }
+
+  .nav-link.active { color: var(--accent); }
+
+  /* Sections */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  section {
+    padding: 5rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-header {
+    margin-bottom: 3rem;
+  }
+
+  .section-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 0.75rem;
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+  }
+
+  .section-desc {
+    color: var(--text-muted);
+    max-width: 600px;
+    font-size: 1rem;
+  }
+
+  /* Cards Grid */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: all 0.3s;
+    cursor: default;
+  }
+
+  .card:hover {
+    border-color: rgba(88,166,255,0.4);
+    background: var(--bg-card-hover);
+    transform: translateY(-2px);
+  }
+
+  .card-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+
+  .card h3 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .card p {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .card .tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(88,166,255,0.1);
+    color: var(--accent);
+    margin-top: 0.75rem;
+  }
+
+  /* File Tree */
+  .file-tree {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.82rem;
+    line-height: 1.8;
+    overflow-x: auto;
+    position: relative;
+  }
+
+  .file-tree .tree-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1rem;
+    font-family: -apple-system, sans-serif;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .file-tree .tree-header .dots {
+    display: flex; gap: 6px;
+  }
+
+  .file-tree .tree-header .dots span {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+
+  .file-tree .tree-header .dots span:nth-child(1) { background: #ff5f56; }
+  .file-tree .tree-header .dots span:nth-child(2) { background: #ffbd2e; }
+  .file-tree .tree-header .dots span:nth-child(3) { background: #27c93f; }
+
+  .tree-line { color: var(--text-muted); }
+  .tree-dir { color: var(--accent); }
+  .tree-file { color: var(--text); }
+  .tree-comment { color: var(--text-muted); font-style: italic; opacity: 0.7; }
+
+  /* Flow Diagram */
+  .flow-diagram {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    overflow-x: auto;
+  }
+
+  .flow-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .flow-node {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-align: center;
+    min-width: 140px;
+    border: 1px solid;
+    transition: all 0.3s;
+  }
+
+  .flow-node:hover { transform: scale(1.05); }
+
+  .flow-node.entry { background: rgba(88,166,255,0.1); border-color: rgba(88,166,255,0.3); color: var(--accent); }
+  .flow-node.core { background: rgba(188,140,255,0.1); border-color: rgba(188,140,255,0.3); color: var(--accent2); }
+  .flow-node.tool { background: rgba(63,185,80,0.1); border-color: rgba(63,185,80,0.3); color: var(--accent3); }
+  .flow-node.ui { background: rgba(240,136,62,0.1); border-color: rgba(240,136,62,0.3); color: var(--accent4); }
+  .flow-node.service { background: rgba(247,120,186,0.1); border-color: rgba(247,120,186,0.3); color: var(--accent5); }
+
+  .flow-arrow {
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .flow-branch {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Tables */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-card);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .data-table th {
+    text-align: left;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.03);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .data-table td {
+    padding: 10px 16px;
+    font-size: 0.88rem;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+  }
+
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .data-table code {
+    background: rgba(88,166,255,0.1);
+    color: var(--accent);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    font-family: 'SF Mono', monospace;
+  }
+
+  /* Tech Stack */
+  .tech-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .tech-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    transition: all 0.3s;
+  }
+
+  .tech-item:hover {
+    border-color: var(--accent);
+    background: var(--bg-card-hover);
+  }
+
+  .tech-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .tech-info h4 { font-size: 0.9rem; font-weight: 600; }
+  .tech-info p { font-size: 0.75rem; color: var(--text-muted); }
+
+  /* Feature Cards */
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    transition: all 0.3s;
+  }
+
+  .feature-card:hover {
+    border-color: rgba(188,140,255,0.4);
+    background: var(--bg-card-hover);
+  }
+
+  .feature-card .feature-top {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-card .feature-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+
+  .feature-card h3 { font-size: 1.2rem; font-weight: 700; }
+  .feature-card .feature-sub { font-size: 0.85rem; color: var(--text-muted); }
+
+  .feature-card .feature-body {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-card .feature-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .feature-card .detail-chip {
+    font-size: 0.75rem;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  /* Stats Bar */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  .stats-bar-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    text-align: center;
+  }
+
+  .stats-bar-item .bar-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 0.5rem;
+  }
+
+  .stats-bar-item .bar-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .progress-bar {
+    height: 6px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    margin-top: 0.75rem;
+    overflow: hidden;
+  }
+
+  .progress-bar .fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s ease;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 1.5rem;
+    background: rgba(255,255,255,0.03);
+    padding: 4px;
+    border-radius: 10px;
+    overflow-x: auto;
+  }
+
+  .tab-btn {
+    padding: 8px 16px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+
+  .tab-btn.active {
+    background: rgba(88,166,255,0.15);
+    color: var(--accent);
+  }
+
+  .tab-btn:hover:not(.active) {
+    color: var(--text);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Collapsible */
+  .collapse-trigger {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 1rem 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    margin-bottom: 2px;
+    transition: all 0.2s;
+  }
+
+  .collapse-trigger:hover { background: var(--bg-card-hover); }
+
+  .collapse-trigger .arrow { transition: transform 0.3s; font-size: 0.8rem; color: var(--text-muted); }
+  .collapse-trigger.open .arrow { transform: rotate(90deg); }
+
+  .collapse-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+
+  .collapse-content.open {
+    max-height: 3000px;
+  }
+
+  .collapse-inner {
+    padding: 1rem 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 10px 10px;
+    margin-bottom: 1rem;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .footer a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero-stats { gap: 1rem; }
+    .stat-item { min-width: 100px; padding: 0.75rem 1rem; }
+    .stat-num { font-size: 1.5rem; }
+    .card-grid { grid-template-columns: 1fr; }
+    .flow-row { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    section { padding: 3rem 0; }
+  }
+
+  /* Animations on scroll */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<section class="hero" id="top">
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Source Map Restored &middot; Research Only
+    </div>
+    <h1>Claude Code</h1>
+    <p class="subtitle">Anthropic 出品的终端 AI 编程助手完整源码解析 —— 基于 React/Ink 的企业级 CLI 架构深度剖析</p>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-num">~2000</div>
+        <div class="stat-label">源文件 (TS/TSX)</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">53+</div>
+        <div class="stat-label">内置工具</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">102</div>
+        <div class="stat-label">斜杠命令</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">146</div>
+        <div class="stat-label">UI 组件</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">85+</div>
+        <div class="stat-label">依赖包</div>
+      </div>
+    </div>
+  </div>
+  <div class="scroll-hint">&#8595; 向下滚动探索</div>
+</section>
+
+<!-- Nav -->
+<nav class="nav" id="nav">
+  <div class="nav-inner">
+    <button class="nav-link active" data-target="overview">概览</button>
+    <button class="nav-link" data-target="structure">项目结构</button>
+    <button class="nav-link" data-target="architecture">架构设计</button>
+    <button class="nav-link" data-target="tools">工具系统</button>
+    <button class="nav-link" data-target="components">UI 组件</button>
+    <button class="nav-link" data-target="services">服务层</button>
+    <button class="nav-link" data-target="hidden">隐藏功能</button>
+    <button class="nav-link" data-target="techstack">技术栈</button>
+    <button class="nav-link" data-target="config">配置系统</button>
+    <button class="nav-link" data-target="dataflow">数据流</button>
+  </div>
+</nav>
+
+<!-- Overview -->
+<section id="overview">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Overview</div>
+      <h2 class="section-title">项目概览</h2>
+      <p class="section-desc">Claude Code 是 Anthropic 打造的终端 AI 编程助手，本项目为从 npm 源码映射中还原的完整 TypeScript 源码树。</p>
+    </div>
+    <div class="card-grid reveal">
+      <div class="card">
+        <div class="card-icon" style="background:rgba(88,166,255,0.12);">&#128187;</div>
+        <h3>交互式 REPL</h3>
+        <p>终端内与 Claude 自然对话，支持语法高亮、Vim 模式、多行输入与丰富的快捷键系统。</p>
+        <span class="tag">核心功能</span>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:rgba(63,185,80,0.12);">&#128295;</div>
+        <h3>53+ 内置工具</h3>
+        <p>文件读写、Bash 执行、Git 操作、Grep 搜索、LSP 集成、MCP 协议，一应俱全。</p>
+        <span class="tag">工具引擎</span>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:rgba(188,140,255,0.12);">&#129302;</div>
+        <h3>多智能体协调</h3>
+        <p>Coordinator 模式支持生成 Worker 子进程，并行处理复杂任务，共享任务列表。</p>
+        <span class="tag">Agent 协同</span>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:rgba(240,136,62,0.12);">&#127760;</div>
+        <h3>远程控制桥接</h3>
+        <p>WebSocket 双向链路连接本地 CLI 与 claude.ai，支持远程操作、权限审批与实时输出流。</p>
+        <span class="tag">Bridge</span>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:rgba(247,120,186,0.12);">&#128024;</div>
+        <h3>AI 宠物伴侣</h3>
+        <p>BUDDY 系统 — 18 物种、5 稀有度，基于账户 UUID 确定性孵化，ASCII 动画陪伴编码。</p>
+        <span class="tag">彩蛋</span>
+      </div>
+      <div class="card">
+        <div class="card-icon" style="background:rgba(88,166,255,0.12);">&#128161;</div>
+        <h3>持久化助手</h3>
+        <p>KAIROS 模式实现跨会话记忆、自动做梦(AutoDream)以及主动式工作触发。</p>
+        <span class="tag">KAIROS</span>
+      </div>
+    </div>
+
+    <div class="stats-bar reveal">
+      <div class="stats-bar-item">
+        <div class="bar-label">TypeScript 文件</div>
+        <div class="bar-value" style="color:var(--accent);">1,987</div>
+        <div class="progress-bar"><div class="fill" style="width:100%;background:var(--gradient1);"></div></div>
+      </div>
+      <div class="stats-bar-item">
+        <div class="bar-label">React Hooks</div>
+        <div class="bar-value" style="color:var(--accent2);">87+</div>
+        <div class="progress-bar"><div class="fill" style="width:70%;background:var(--gradient1);"></div></div>
+      </div>
+      <div class="stats-bar-item">
+        <div class="bar-label">Feature Flags</div>
+        <div class="bar-value" style="color:var(--accent3);">50+</div>
+        <div class="progress-bar"><div class="fill" style="width:55%;background:var(--gradient2);"></div></div>
+      </div>
+      <div class="stats-bar-item">
+        <div class="bar-label">环境变量</div>
+        <div class="bar-value" style="color:var(--accent4);">20+</div>
+        <div class="progress-bar"><div class="fill" style="width:35%;background:var(--gradient3);"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Structure -->
+<section id="structure">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Structure</div>
+      <h2 class="section-title">项目结构</h2>
+      <p class="section-desc">清晰的模块化组织，将近 2000 个源文件划分为核心引擎、工具、组件、服务等子系统。</p>
+    </div>
+    <div class="file-tree reveal">
+      <div class="tree-header">
+        <div class="dots"><span></span><span></span><span></span></div>
+        Claude-Code/
+      </div>
+<pre>
+<span class="tree-dir">src/</span>                               <span class="tree-comment"># 核心应用 (~2000 TS/TSX 文件)</span>
+<span class="tree-line">  ├── </span><span class="tree-file">dev-entry.ts</span>               <span class="tree-comment"># 开发入口</span>
+<span class="tree-line">  ├── </span><span class="tree-file">main.tsx</span>                   <span class="tree-comment"># 主引导程序 (认证/设置/REPL)</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">entrypoints/</span>               <span class="tree-comment"># CLI 入口 + SDK 集成</span>
+<span class="tree-line">  ├── </span><span class="tree-file">commands.ts</span>                <span class="tree-comment"># 命令注册表 (102 命令)</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">commands/</span>                  <span class="tree-comment"># 斜杠命令实现 (87 目录)</span>
+<span class="tree-line">  ├── </span><span class="tree-file">Tool.ts</span>                    <span class="tree-comment"># 工具接口与基类</span>
+<span class="tree-line">  ├── </span><span class="tree-file">QueryEngine.ts</span>             <span class="tree-comment"># 核心消息处理引擎</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">tools/</span>                     <span class="tree-comment"># 53+ 工具实现</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">services/</span>                  <span class="tree-comment"># API / MCP / 分析 / AutoDream</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">components/</span>                <span class="tree-comment"># React/Ink 终端 UI (146 目录)</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">hooks/</span>                     <span class="tree-comment"># 自定义 React Hooks (87+)</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">state/</span>                     <span class="tree-comment"># 状态管理 (Zustand 风格)</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">context/</span>                   <span class="tree-comment"># React Contexts (邮箱/通知等)</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">buddy/</span>                     <span class="tree-comment"># AI 宠物伴侣系统</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">assistant/</span>                 <span class="tree-comment"># KAIROS 持久助手</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">coordinator/</span>               <span class="tree-comment"># 多智能体编排</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">bridge/</span>                    <span class="tree-comment"># 远程控制桥接 (31 文件)</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">proactive/</span>                 <span class="tree-comment"># 自主/主动模式</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">vim/</span>                       <span class="tree-comment"># Vim 模式引擎</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">voice/</span>                     <span class="tree-comment"># 语音交互</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">utils/</span>                     <span class="tree-comment"># 工具函数 (60+ 目录)</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">types/</span>                     <span class="tree-comment"># 类型定义</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">schemas/</span>                   <span class="tree-comment"># Zod 校验模式</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">plugins/</span>                   <span class="tree-comment"># 插件系统</span>
+<span class="tree-line">  └── </span><span class="tree-dir">skills/</span>                    <span class="tree-comment"># 技能框架</span>
+<span class="tree-dir">shims/</span>                             <span class="tree-comment"># 原生模块兼容垫片</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">ant-claude-for-chrome-mcp/</span>
+<span class="tree-line">  ├── </span><span class="tree-dir">color-diff-napi/</span>
+<span class="tree-line">  └── </span><span class="tree-dir">url-handler-napi/</span>
+<span class="tree-dir">vendor/</span>                            <span class="tree-comment"># 第三方源码</span>
+<span class="tree-dir">docs/</span>                              <span class="tree-comment"># 隐藏功能文档 (7 篇)</span>
+<span class="tree-file">package.json</span>                       <span class="tree-comment"># 85+ 依赖</span>
+<span class="tree-file">tsconfig.json</span>                      <span class="tree-comment"># TypeScript 配置</span>
+<span class="tree-file">AGENTS.md</span>                          <span class="tree-comment"># 开发指南</span>
+<span class="tree-file">README.md</span>                          <span class="tree-comment"># 项目文档</span>
+</pre>
+    </div>
+  </div>
+</section>
+
+<!-- Architecture -->
+<section id="architecture">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Architecture</div>
+      <h2 class="section-title">架构设计</h2>
+      <p class="section-desc">从入口引导到消息处理、工具编排、UI 渲染的完整执行流程。</p>
+    </div>
+
+    <div class="flow-diagram reveal">
+      <h3 style="font-size:1rem;margin-bottom:1.5rem;color:var(--text-muted);">&#9654; 核心执行流程</h3>
+
+      <div class="flow-row">
+        <div class="flow-node entry">dev-entry.ts<br><small>版本检查</small></div>
+        <div class="flow-arrow">&#10132;</div>
+        <div class="flow-node entry">main.tsx<br><small>认证 / 设置 / GrowthBook</small></div>
+        <div class="flow-arrow">&#10132;</div>
+        <div class="flow-node core">AppState + Contexts<br><small>状态 / 邮箱 / 通知</small></div>
+      </div>
+
+      <div class="flow-row" style="margin:1rem 0;">
+        <div class="flow-arrow" style="transform:rotate(90deg);">&#10132;</div>
+      </div>
+
+      <div class="flow-row">
+        <div class="flow-node core">命令分发器<br><small>commands.ts (102 命令)</small></div>
+        <div class="flow-arrow">&#10132;</div>
+        <div class="flow-node core">QueryEngine<br><small>消息循环核心</small></div>
+      </div>
+
+      <div class="flow-row" style="margin:1rem 0;">
+        <div class="flow-arrow" style="transform:rotate(90deg);">&#10132;</div>
+      </div>
+
+      <div class="flow-row">
+        <div class="flow-branch">
+          <div class="flow-node service">Claude API<br><small>流式响应</small></div>
+          <div class="flow-node tool">工具解析<br><small>tool_use blocks</small></div>
+          <div class="flow-node tool">权限检查<br><small>canUseToolFn</small></div>
+          <div class="flow-node tool">工具执行<br><small>tool.run()</small></div>
+        </div>
+      </div>
+
+      <div class="flow-row" style="margin:1rem 0;">
+        <div class="flow-arrow" style="transform:rotate(90deg);">&#10132;</div>
+      </div>
+
+      <div class="flow-row">
+        <div class="flow-node ui">Ink 组件渲染<br><small>终端 UI 输出</small></div>
+        <div class="flow-arrow">&#10132;</div>
+        <div class="flow-node service">会话持久化<br><small>历史 / 记忆 / 成本</small></div>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;" class="reveal">
+      <h3 style="font-size:1rem;margin-bottom:1rem;color:var(--text-muted);">&#128736; 工具执行管线</h3>
+      <div class="flow-diagram">
+        <div class="flow-row">
+          <div class="flow-node entry">用户输入</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node core">QueryEngine<br>.processMessage()</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node service">Claude API<br>流式返回</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node tool">解析 tool_use</div>
+        </div>
+        <div class="flow-row" style="margin:1rem 0;">
+          <div class="flow-arrow" style="transform:rotate(90deg);">&#10132;</div>
+        </div>
+        <div class="flow-row">
+          <div class="flow-node tool">权限门控</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node tool">工具名匹配</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node tool">Schema 校验</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node entry">tool.run()</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node ui">结果渲染</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tools -->
+<section id="tools">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Tools</div>
+      <h2 class="section-title">工具系统</h2>
+      <p class="section-desc">53+ 内置工具按功能域分类，涵盖文件、执行、智能体、Web、MCP、LSP 等六大领域。</p>
+    </div>
+
+    <div class="tabs reveal">
+      <button class="tab-btn active" data-tab="tools-file">文件 I/O</button>
+      <button class="tab-btn" data-tab="tools-exec">执行</button>
+      <button class="tab-btn" data-tab="tools-agent">智能体</button>
+      <button class="tab-btn" data-tab="tools-web">Web</button>
+      <button class="tab-btn" data-tab="tools-mcp">MCP</button>
+      <button class="tab-btn" data-tab="tools-task">任务管理</button>
+      <button class="tab-btn" data-tab="tools-plan">规划</button>
+      <button class="tab-btn" data-tab="tools-other">其他</button>
+    </div>
+
+    <div class="tab-panel active" id="tools-file">
+      <table class="data-table">
+        <thead><tr><th>工具名</th><th>功能描述</th></tr></thead>
+        <tbody>
+          <tr><td><code>FileRead</code></td><td>读取文件内容，支持图片/PDF/Notebook 等多格式</td></tr>
+          <tr><td><code>FileWrite</code></td><td>创建或完整重写文件</td></tr>
+          <tr><td><code>FileEdit</code></td><td>精确字符串替换，支持 replace_all 批量替换</td></tr>
+          <tr><td><code>NotebookEdit</code></td><td>Jupyter Notebook 单元格编辑 (替换/插入/删除)</td></tr>
+          <tr><td><code>GlobTool</code></td><td>快速文件模式匹配搜索 (如 **/*.ts)</td></tr>
+          <tr><td><code>GrepTool</code></td><td>基于 ripgrep 的全文正则搜索</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tools-exec">
+      <table class="data-table">
+        <thead><tr><th>工具名</th><th>功能描述</th></tr></thead>
+        <tbody>
+          <tr><td><code>BashTool</code></td><td>执行 Bash 命令，支持超时、后台运行</td></tr>
+          <tr><td><code>REPLTool</code></td><td>交互式 REPL 执行环境</td></tr>
+          <tr><td><code>PowerShellTool</code></td><td>Windows PowerShell 命令执行</td></tr>
+          <tr><td><code>WorkflowTool</code></td><td>工作流脚本编排执行</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tools-agent">
+      <table class="data-table">
+        <thead><tr><th>工具名</th><th>功能描述</th></tr></thead>
+        <tbody>
+          <tr><td><code>AgentTool</code></td><td>生成子智能体处理复杂多步任务</td></tr>
+          <tr><td><code>SendMessageTool</code></td><td>向运行中的智能体发送消息</td></tr>
+          <tr><td><code>AgentSummary</code></td><td>汇总智能体执行结果</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tools-web">
+      <table class="data-table">
+        <thead><tr><th>工具名</th><th>功能描述</th></tr></thead>
+        <tbody>
+          <tr><td><code>WebSearchTool</code></td><td>Web 搜索并返回结果</td></tr>
+          <tr><td><code>WebFetchTool</code></td><td>抓取 URL 内容，AI 处理提取信息</td></tr>
+          <tr><td><code>WebBrowserTool</code></td><td>浏览器自动化操作</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tools-mcp">
+      <table class="data-table">
+        <thead><tr><th>工具名</th><th>功能描述</th></tr></thead>
+        <tbody>
+          <tr><td><code>MCPTool</code></td><td>MCP 协议工具调用代理</td></tr>
+          <tr><td><code>ListMcpResourcesTool</code></td><td>列出 MCP 服务器提供的资源</td></tr>
+          <tr><td><code>ReadMcpResourceTool</code></td><td>读取 MCP 资源内容</td></tr>
+          <tr><td><code>McpAuthTool</code></td><td>MCP 服务器认证管理</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tools-task">
+      <table class="data-table">
+        <thead><tr><th>工具名</th><th>功能描述</th></tr></thead>
+        <tbody>
+          <tr><td><code>TaskCreate</code></td><td>创建结构化任务追踪项</td></tr>
+          <tr><td><code>TaskGet / TaskList</code></td><td>获取/列出任务详情</td></tr>
+          <tr><td><code>TaskUpdate</code></td><td>更新任务状态与依赖</td></tr>
+          <tr><td><code>TaskStop / TaskOutput</code></td><td>停止后台任务 / 获取任务输出</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tools-plan">
+      <table class="data-table">
+        <thead><tr><th>工具名</th><th>功能描述</th></tr></thead>
+        <tbody>
+          <tr><td><code>EnterPlanModeTool</code></td><td>进入规划模式，探索代码库设计方案</td></tr>
+          <tr><td><code>ExitPlanModeTool</code></td><td>退出规划模式，提交方案供用户审批</td></tr>
+          <tr><td><code>VerifyPlanExecution</code></td><td>验证计划执行结果</td></tr>
+          <tr><td><code>LSPTool</code></td><td>LSP 语言服务集成 (定义跳转/引用查找等)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-panel" id="tools-other">
+      <table class="data-table">
+        <thead><tr><th>工具名</th><th>功能描述</th></tr></thead>
+        <tbody>
+          <tr><td><code>AskUserQuestion</code></td><td>向用户提出选择/确认问题</td></tr>
+          <tr><td><code>RemoteTriggerTool</code></td><td>远程触发器 API (CRUD + 运行)</td></tr>
+          <tr><td><code>ScheduleCronTool</code></td><td>定时任务调度 (Cron 表达式)</td></tr>
+          <tr><td><code>MonitorTool</code></td><td>系统监控工具</td></tr>
+          <tr><td><code>SendUserFile</code></td><td>向用户发送文件</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Components -->
+<section id="components">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Components</div>
+      <h2 class="section-title">UI 组件体系</h2>
+      <p class="section-desc">146 个 React/Ink 终端组件，构建完整的终端交互界面。</p>
+    </div>
+    <div class="card-grid reveal">
+      <div class="card">
+        <h3>&#127912; 设计系统</h3>
+        <p>Button, Text, Box, Input, Select, Checkbox, Radio — 完整的终端 UI 原子组件库。</p>
+      </div>
+      <div class="card">
+        <h3>&#128172; 消息渲染</h3>
+        <p>ToolCall, ToolResult, ErrorMessage, LoadingMessage — 对话流中的各类消息展示。</p>
+      </div>
+      <div class="card">
+        <h3>&#128202; 代码 Diff</h3>
+        <p>StructuredDiff 组件支持语法高亮的代码对比视图。</p>
+      </div>
+      <div class="card">
+        <h3>&#9881; 设置面板</h3>
+        <p>SettingsPanel, ConfigForm — 交互式配置界面。</p>
+      </div>
+      <div class="card">
+        <h3>&#128274; 权限对话框</h3>
+        <p>PermissionDialog, TrustDialog — 工具权限确认 UI。</p>
+      </div>
+      <div class="card">
+        <h3>&#127919; 向导系统</h3>
+        <p>OnboardingWizard, SessionChooser — 新手引导与会话管理。</p>
+      </div>
+      <div class="card">
+        <h3>&#128296; 终端视图</h3>
+        <p>TerminalView, PromptInput — 核心终端交互组件。</p>
+      </div>
+      <div class="card">
+        <h3>&#128300; Spinner 动画</h3>
+        <p>AnimatedSpinner, ProgressIndicator — 加载与进度展示。</p>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;" class="reveal">
+      <h3 style="font-size:1rem;margin-bottom:1rem;color:var(--text-muted);">87+ 自定义 React Hooks</h3>
+      <div class="card-grid">
+        <div class="card">
+          <h3>权限 Hooks</h3>
+          <p><code>useCanUseTool</code> <code>usePermissionRequest</code> <code>useBypassMode</code></p>
+        </div>
+        <div class="card">
+          <h3>设置 Hooks</h3>
+          <p><code>useSettings</code> <code>useSettingsChange</code> <code>useConfigValue</code></p>
+        </div>
+        <div class="card">
+          <h3>工具 Hooks</h3>
+          <p><code>useToolCall</code> <code>useToolResult</code> <code>useBashProgress</code></p>
+        </div>
+        <div class="card">
+          <h3>输入 Hooks</h3>
+          <p><code>useCommandKeybindings</code> <code>useCopyOnSelect</code> <code>useArrowKeyHistory</code></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Services -->
+<section id="services">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Services</div>
+      <h2 class="section-title">服务层</h2>
+      <p class="section-desc">涵盖 API 通信、MCP 协议、OAuth 认证、分析追踪等核心后端服务。</p>
+    </div>
+    <div class="reveal" style="overflow-x:auto;">
+      <table class="data-table">
+        <thead><tr><th>服务</th><th>职责</th><th>关键文件</th></tr></thead>
+        <tbody>
+          <tr><td><strong>API</strong></td><td>Claude API 客户端、流式通信、配额检查</td><td><code>services/api/claude.ts</code></td></tr>
+          <tr><td><strong>MCP</strong></td><td>Model Context Protocol 服务器管理与工具发现</td><td><code>services/mcp/client.ts</code></td></tr>
+          <tr><td><strong>OAuth</strong></td><td>认证、会话管理、令牌处理</td><td><code>utils/auth/</code></td></tr>
+          <tr><td><strong>Analytics</strong></td><td>GrowthBook Feature Flags、遥测、使用追踪</td><td><code>services/analytics/</code></td></tr>
+          <tr><td><strong>AutoDream</strong></td><td>KAIROS 记忆整合服务 (Orient→Gather→Consolidate→Prune)</td><td><code>services/autoDream/</code></td></tr>
+          <tr><td><strong>Compact</strong></td><td>上下文压缩以管理 Token 预算</td><td><code>services/compact/</code></td></tr>
+          <tr><td><strong>Plugins</strong></td><td>插件发现、加载与执行</td><td><code>plugins/</code></td></tr>
+          <tr><td><strong>LSP</strong></td><td>语言服务器协议连接管理</td><td><code>services/lsp/</code></td></tr>
+          <tr><td><strong>SessionMemory</strong></td><td>单会话记忆 (标签/关联)</td><td><code>services/sessionMemory/</code></td></tr>
+          <tr><td><strong>TeamMemory</strong></td><td>跨会话团队记忆同步</td><td><code>services/teamMemory/</code></td></tr>
+          <tr><td><strong>Sandbox</strong></td><td>沙箱化代码执行</td><td><code>services/sandbox/</code></td></tr>
+          <tr><td><strong>SkillSearch</strong></td><td>技能发现与搜索索引</td><td><code>services/skillSearch/</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Hidden Features -->
+<section id="hidden">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Hidden Features</div>
+      <h2 class="section-title">隐藏功能</h2>
+      <p class="section-desc">通过编译时 Feature Gate 控制的高级功能，部分仅限内部使用。</p>
+    </div>
+
+    <div class="reveal">
+      <div class="feature-card">
+        <div class="feature-top">
+          <div class="feature-icon" style="background:rgba(247,120,186,0.12);">&#128039;</div>
+          <div>
+            <h3>BUDDY — AI 宠物伴侣</h3>
+            <div class="feature-sub">Feature Gate: <code>feature('BUDDY')</code> &nbsp;|&nbsp; 路径: <code>src/buddy/</code></div>
+          </div>
+        </div>
+        <div class="feature-body">
+          基于账户 UUID + 盐值 (friend-2026-401) 的 FNV-1a 哈希确定性孵化。18 个物种 (鸭/鹅/猫/龙/章鱼/猫头鹰/企鹅...)，5 级稀有度 (普通 60% / 非凡 25% / 稀有 10% / 史诗 4% / 传说 1%)，加上独立的 1% 闪光概率。500ms ASCII 精灵动画。
+        </div>
+        <div class="feature-details">
+          <span class="detail-chip">18 物种</span>
+          <span class="detail-chip">5 稀有度</span>
+          <span class="detail-chip">1% 闪光</span>
+          <span class="detail-chip">FNV-1a 哈希</span>
+          <span class="detail-chip">/buddy pet</span>
+          <span class="detail-chip">/buddy hatch</span>
+          <span class="detail-chip">/buddy card</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-top">
+          <div class="feature-icon" style="background:rgba(88,166,255,0.12);">&#129504;</div>
+          <div>
+            <h3>KAIROS — 持久化助手模式</h3>
+            <div class="feature-sub">Feature Gate: <code>feature('KAIROS')</code> &nbsp;|&nbsp; 路径: <code>src/assistant/</code></div>
+          </div>
+        </div>
+        <div class="feature-body">
+          跨会话持久化，每日自动日志写入 <code>~/.claude/logs/YYYY/MM/YYYY-MM-DD.md</code>。AutoDream 记忆整合 — 每 24h+ 且 5+ 新会话后触发，经历 Orient → Gather → Consolidate → Prune 四阶段。主动模式下 Claude 可自行触发工作。
+        </div>
+        <div class="feature-details">
+          <span class="detail-chip">跨会话持久化</span>
+          <span class="detail-chip">AutoDream 四阶段</span>
+          <span class="detail-chip">主动模式</span>
+          <span class="detail-chip">SleepTool</span>
+          <span class="detail-chip">15s 自动后台化</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-top">
+          <div class="feature-icon" style="background:rgba(188,140,255,0.12);">&#128640;</div>
+          <div>
+            <h3>ULTRAPLAN — 云端深度规划</h3>
+            <div class="feature-sub">Feature Gate: <code>feature('ULTRAPLAN')</code> &nbsp;|&nbsp; 路径: <code>src/commands/ultraplan.tsx</code></div>
+          </div>
+        </div>
+        <div class="feature-body">
+          将复杂问题卸载到云端 Opus 进行最长 30 分钟的独立深度研究。流程：本地 Prompt → 远程 CCR 会话 → Opus 独立研究 → 轮询结果 → 浏览器审查 → 本地执行。支持 Git Bundle 代码上下文传输。仅限内部使用。
+        </div>
+        <div class="feature-details">
+          <span class="detail-chip">30 分钟深度研究</span>
+          <span class="detail-chip">远程 CCR</span>
+          <span class="detail-chip">Git Bundle 传输</span>
+          <span class="detail-chip">仅限内部</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-top">
+          <div class="feature-icon" style="background:rgba(63,185,80,0.12);">&#129302;</div>
+          <div>
+            <h3>Coordinator — 多智能体编排</h3>
+            <div class="feature-sub">Feature Gate: <code>feature('COORDINATOR_MODE')</code> &nbsp;|&nbsp; 路径: <code>src/coordinator/</code></div>
+          </div>
+        </div>
+        <div class="feature-body">
+          Coordinator 仅持有 Agent/SendMessage/Shutdown 工具，将工作分派给拥有完整工具集的 Worker 子进程。核心规则：禁止模糊委托 — Coordinator 必须理解需求。共享任务列表存储于 <code>~/.claude/tasks/</code>。
+        </div>
+        <div class="feature-details">
+          <span class="detail-chip">Coordinator-Worker 模型</span>
+          <span class="detail-chip">子进程隔离</span>
+          <span class="detail-chip">共享任务列表</span>
+          <span class="detail-chip">禁止模糊委托</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-top">
+          <div class="feature-icon" style="background:rgba(240,136,62,0.12);">&#127760;</div>
+          <div>
+            <h3>Bridge — 远程终端控制</h3>
+            <div class="feature-sub">Feature Gate: <code>feature('BRIDGE_MODE')</code> &nbsp;|&nbsp; 路径: <code>src/bridge/</code></div>
+          </div>
+        </div>
+        <div class="feature-body">
+          WebSocket 双向连接本地 CLI 与 claude.ai 网页端。支持远程发送/接收消息、远程权限审批、实时输出查看与会话持久化。
+        </div>
+        <div class="feature-details">
+          <span class="detail-chip">WebSocket 双向</span>
+          <span class="detail-chip">远程审批</span>
+          <span class="detail-chip">实时输出流</span>
+          <span class="detail-chip">33 文件</span>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-top">
+          <div class="feature-icon" style="background:rgba(88,166,255,0.12);">&#127908;</div>
+          <div>
+            <h3>Voice — 语音交互</h3>
+            <div class="feature-sub">Feature Gate: <code>feature('VOICE_MODE')</code> &nbsp;|&nbsp; 路径: <code>src/voice/</code></div>
+          </div>
+        </div>
+        <div class="feature-body">Nova 3 语音识别引擎，支持流式 STT (Speech-to-Text) 与关键词检测。</div>
+        <div class="feature-details">
+          <span class="detail-chip">Nova 3 STT</span>
+          <span class="detail-chip">关键词检测</span>
+          <span class="detail-chip">流式识别</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;" class="reveal">
+      <h3 style="font-size:1rem;margin-bottom:1rem;color:var(--text-muted);">50+ 编译时 Feature Flags</h3>
+      <div class="file-tree" style="font-size:0.78rem;line-height:2;">
+<pre style="margin:0;">
+<span class="tree-dir">核心功能</span>    BUDDY  KAIROS  KAIROS_BRIEF  KAIROS_CHANNELS  KAIROS_GITHUB_WEBHOOKS
+<span class="tree-dir">高级模式</span>    ULTRAPLAN  COORDINATOR_MODE  BRIDGE_MODE  VOICE_MODE  PROACTIVE
+<span class="tree-dir">基础设施</span>    FORK_SUBAGENT  DAEMON  UDS_INBOX  WORKFLOW_SCRIPTS  TORCH
+<span class="tree-dir">实验性</span>      MONITOR_TOOL  HISTORY_SNIP  ANTI_DISTILLATION_CC  BASH_CLASSIFIER
+<span class="tree-dir">会话管理</span>    BG_SESSIONS  CACHED_MICROCOMPACT  CCR_REMOTE_SETUP  CHICAGO_MCP
+<span class="tree-dir">其他</span>        SESSION_MEMORY  TEAM_MEMORY  SKILL_SEARCH  SANDBOX  ... (30+ more)
+</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tech Stack -->
+<section id="techstack">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Tech Stack</div>
+      <h2 class="section-title">技术栈</h2>
+      <p class="section-desc">基于 Bun + TypeScript + React/Ink 的现代化 CLI 技术选型。</p>
+    </div>
+
+    <div class="reveal">
+      <h3 style="font-size:1rem;margin-bottom:1rem;color:var(--text-muted);">&#9889; 核心框架</h3>
+      <div class="tech-grid">
+        <div class="tech-item">
+          <div class="tech-icon" style="background:rgba(88,166,255,0.12);color:var(--accent);">TS</div>
+          <div class="tech-info"><h4>TypeScript 5+</h4><p>主语言，ESNext 目标</p></div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-icon" style="background:rgba(240,136,62,0.12);color:var(--accent4);">&#128019;</div>
+          <div class="tech-info"><h4>Bun &ge; 1.3.5</h4><p>运行时 + 打包器 + 包管理</p></div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-icon" style="background:rgba(88,166,255,0.12);color:var(--accent);">&#9883;</div>
+          <div class="tech-info"><h4>React + Ink</h4><p>终端 UI 框架</p></div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-icon" style="background:rgba(63,185,80,0.12);color:var(--accent3);">&#9741;</div>
+          <div class="tech-info"><h4>Node.js &ge; 24</h4><p>兼容运行时</p></div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-icon" style="background:rgba(188,140,255,0.12);color:var(--accent2);">&#128187;</div>
+          <div class="tech-info"><h4>Commander.js</h4><p>CLI 命令解析</p></div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-icon" style="background:rgba(247,120,186,0.12);color:var(--accent5);">&#128200;</div>
+          <div class="tech-info"><h4>Zustand 风格</h4><p>自定义状态管理</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;" class="reveal">
+      <h3 style="font-size:1rem;margin-bottom:1rem;color:var(--text-muted);">&#128230; 关键依赖 (85+)</h3>
+      <div style="overflow-x:auto;">
+        <table class="data-table">
+          <thead><tr><th>分类</th><th>依赖包</th></tr></thead>
+          <tbody>
+            <tr><td><strong>AI APIs</strong></td><td><code>@anthropic-ai/sdk</code> <code>@anthropic-ai/claude-agent-sdk</code> <code>@anthropic-ai/sandbox-runtime</code></td></tr>
+            <tr><td><strong>MCP</strong></td><td><code>@modelcontextprotocol/sdk</code> <code>@anthropic-ai/mcpb</code></td></tr>
+            <tr><td><strong>遥测</strong></td><td><code>@opentelemetry/api</code> <code>@opentelemetry/sdk-trace-base</code> <code>@growthbook/growthbook</code></td></tr>
+            <tr><td><strong>云平台</strong></td><td><code>@aws-sdk/client-bedrock-runtime</code> <code>google-auth-library</code></td></tr>
+            <tr><td><strong>终端</strong></td><td><code>chalk</code> <code>figures</code> <code>wrap-ansi</code> <code>strip-ansi</code> <code>cli-boxes</code></td></tr>
+            <tr><td><strong>文本处理</strong></td><td><code>marked</code> <code>highlight.js</code> <code>diff</code> <code>code-excerpt</code></td></tr>
+            <tr><td><strong>Schema</strong></td><td><code>zod</code> <code>ajv</code> <code>jsonc-parser</code></td></tr>
+            <tr><td><strong>网络</strong></td><td><code>ws</code> <code>undici</code> <code>https-proxy-agent</code></td></tr>
+            <tr><td><strong>文件</strong></td><td><code>chokidar</code> <code>proper-lockfile</code> <code>ignore</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="margin-top:2rem;" class="reveal">
+      <h3 style="font-size:1rem;margin-bottom:1rem;color:var(--text-muted);">&#128736; 构建配置</h3>
+      <div class="card-grid">
+        <div class="card">
+          <h3>打包器</h3>
+          <p>Bun 原生打包，ESM 模块模式</p>
+        </div>
+        <div class="card">
+          <h3>JSX</h3>
+          <p>react-jsx (自动运行时)</p>
+        </div>
+        <div class="card">
+          <h3>路径别名</h3>
+          <p><code>src/*</code> &rarr; <code>./src/*</code></p>
+        </div>
+        <div class="card">
+          <h3>严格模式</h3>
+          <p>Strict: false (宽松类型检查)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Config -->
+<section id="config">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Configuration</div>
+      <h2 class="section-title">配置系统</h2>
+      <p class="section-desc">运行时配置、环境变量与远程 Feature Flags 三层配置体系。</p>
+    </div>
+
+    <div class="reveal">
+      <button class="collapse-trigger" onclick="toggleCollapse(this)">
+        <span>&#128193; 运行时配置文件</span>
+        <span class="arrow">&#9654;</span>
+      </button>
+      <div class="collapse-content">
+        <div class="collapse-inner">
+          <table class="data-table" style="border:none;">
+            <tbody>
+              <tr><td><code>.claude/settings.json</code></td><td>用户设置 (主题/快捷键/插件/助手模式)</td></tr>
+              <tr><td><code>.claude/tasks/</code></td><td>共享任务列表 (JSON)</td></tr>
+              <tr><td><code>.claude/logs/</code></td><td>每日会话日志 (Markdown)</td></tr>
+              <tr><td><code>~/.claude/</code></td><td>全局配置目录 (记忆/插件等)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="collapse-trigger" onclick="toggleCollapse(this)">
+        <span>&#127793; 环境变量 (20+)</span>
+        <span class="arrow">&#9654;</span>
+      </button>
+      <div class="collapse-content">
+        <div class="collapse-inner">
+          <table class="data-table" style="border:none;">
+            <tbody>
+              <tr><td><code>ANTHROPIC_MODEL</code></td><td>覆盖 Claude 模型</td></tr>
+              <tr><td><code>CLAUDE_CODE_PROACTIVE</code></td><td>启用主动模式</td></tr>
+              <tr><td><code>CLAUDE_CODE_COORDINATOR_MODE</code></td><td>启用多智能体协调器</td></tr>
+              <tr><td><code>CLAUDE_CODE_BRIEF</code></td><td>启用简洁模式</td></tr>
+              <tr><td><code>CLAUDE_CODE_DISABLE_THINKING</code></td><td>禁用扩展思考</td></tr>
+              <tr><td><code>CLAUDE_CODE_USE_BEDROCK</code></td><td>使用 AWS Bedrock</td></tr>
+              <tr><td><code>CLAUDE_CODE_USE_VERTEX</code></td><td>使用 Google Vertex AI</td></tr>
+              <tr><td><code>CLAUDE_CODE_IDLE_THRESHOLD_MINUTES</code></td><td>空闲阈值 (默认 75 分钟)</td></tr>
+              <tr><td><code>USER_TYPE</code></td><td>"ant" (内部) 或 "external" (公开)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="collapse-trigger" onclick="toggleCollapse(this)">
+        <span>&#127919; GrowthBook 远程 Feature Flags</span>
+        <span class="arrow">&#9654;</span>
+      </button>
+      <div class="collapse-content">
+        <div class="collapse-inner">
+          <table class="data-table" style="border:none;">
+            <tbody>
+              <tr><td><code>tengu_kairos</code></td><td>启用 KAIROS 助手模式</td></tr>
+              <tr><td><code>tengu_onyx_plover</code></td><td>AutoDream 阈值</td></tr>
+              <tr><td><code>tengu_cobalt_frost</code></td><td>语音识别 (Nova 3)</td></tr>
+              <tr><td><code>tengu_ultraplan_model</code></td><td>ULTRAPLAN 使用的模型</td></tr>
+              <tr><td><code>tengu_session_memory</code></td><td>会话记忆功能</td></tr>
+              <tr><td><code>tengu_max_version_config</code></td><td>自动更新终止开关</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Data Flow -->
+<section id="dataflow">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-tag">Data Flow</div>
+      <h2 class="section-title">数据流示例</h2>
+      <p class="section-desc">典型场景下的数据流向与组件交互。</p>
+    </div>
+
+    <div class="reveal">
+      <div class="feature-card">
+        <h3 style="margin-bottom:1rem;">&#9889; 场景一：简单工具执行</h3>
+        <div class="flow-diagram" style="border:none;padding:1rem 0;">
+          <div class="flow-row">
+            <div class="flow-node entry">用户: "列出文件"</div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node tool">BashTool.run("ls -la")</div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node service">execa("sh", ["-c", "ls"])</div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node ui">终端渲染结果</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <h3 style="margin-bottom:1rem;">&#129504; 场景二：KAIROS 记忆整合</h3>
+        <div class="flow-diagram" style="border:none;padding:1rem 0;">
+          <div class="flow-row">
+            <div class="flow-node entry">会话 1: 用户提问</div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node service">自动日志记录</div>
+          </div>
+          <div class="flow-row" style="margin:0.5rem 0;"><div class="flow-arrow" style="transform:rotate(90deg);">&#10132;</div></div>
+          <div class="flow-row">
+            <div class="flow-node core">24h+ &amp; 5+ 会话</div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node service">AutoDream 触发</div>
+          </div>
+          <div class="flow-row" style="margin:0.5rem 0;"><div class="flow-arrow" style="transform:rotate(90deg);">&#10132;</div></div>
+          <div class="flow-row">
+            <div class="flow-branch">
+              <div class="flow-node tool">Orient</div>
+              <div class="flow-arrow">&#10132;</div>
+              <div class="flow-node tool">Gather</div>
+              <div class="flow-arrow">&#10132;</div>
+              <div class="flow-node tool">Consolidate</div>
+              <div class="flow-arrow">&#10132;</div>
+              <div class="flow-node tool">Prune</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <h3 style="margin-bottom:1rem;">&#129302; 场景三：Coordinator 多智能体</h3>
+        <div class="flow-diagram" style="border:none;padding:1rem 0;">
+          <div class="flow-row">
+            <div class="flow-node entry">用户: /fork "构建特性 X"</div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node core">Coordinator</div>
+          </div>
+          <div class="flow-row" style="margin:0.5rem 0;"><div class="flow-arrow" style="transform:rotate(90deg);">&#10132;</div></div>
+          <div class="flow-row">
+            <div class="flow-branch">
+              <div class="flow-node tool">Worker 1<br><small>完整工具集</small></div>
+              <div class="flow-node tool">Worker 2<br><small>完整工具集</small></div>
+              <div class="flow-node tool">Worker 3<br><small>完整工具集</small></div>
+            </div>
+          </div>
+          <div class="flow-row" style="margin:0.5rem 0;"><div class="flow-arrow" style="transform:rotate(90deg);">&#10132;</div></div>
+          <div class="flow-row">
+            <div class="flow-node service">共享任务列表</div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node ui">Coordinator 汇总结果</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <p style="margin-bottom:0.5rem;">Claude Code 项目完整解析 &middot; 仅供学习研究</p>
+  <p>Source: Anthropic &mdash; Restored from npm source maps</p>
+</footer>
+
+<script>
+// Scroll reveal
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Nav
+const navLinks = document.querySelectorAll('.nav-link');
+navLinks.forEach(link => {
+  link.addEventListener('click', () => {
+    navLinks.forEach(l => l.classList.remove('active'));
+    link.classList.add('active');
+    const target = document.getElementById(link.dataset.target);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+// Scroll spy
+const sections = document.querySelectorAll('section[id]');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 120) current = s.id;
+  });
+  navLinks.forEach(l => {
+    l.classList.toggle('active', l.dataset.target === current);
+  });
+});
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const parent = btn.closest('section') || btn.closest('.container');
+    parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    parent.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const panel = document.getElementById(btn.dataset.tab);
+    if (panel) panel.classList.add('active');
+  });
+});
+
+// Collapse
+function toggleCollapse(trigger) {
+  trigger.classList.toggle('open');
+  const content = trigger.nextElementSibling;
+  content.classList.toggle('open');
+}
+
+// Animated counters
+function animateCounters() {
+  document.querySelectorAll('.stat-num').forEach(el => {
+    const text = el.textContent;
+    const match = text.match(/[\d,]+/);
+    if (!match) return;
+    const target = parseInt(match[0].replace(/,/g, ''));
+    const suffix = text.replace(match[0], '');
+    const prefix = text.split(match[0])[0];
+    let current = 0;
+    const step = Math.ceil(target / 40);
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      el.textContent = prefix + (current >= 1000 ? current.toLocaleString() : current) + suffix;
+      if (current >= target) clearInterval(timer);
+    }, 30);
+  });
+}
+
+// Run counters when hero is visible
+const heroObs = new IntersectionObserver((entries) => {
+  if (entries[0].isIntersecting) { animateCounters(); heroObs.disconnect(); }
+}, { threshold: 0.5 });
+heroObs.observe(document.querySelector('.hero-stats'));
+</script>
+
+</body>
+</html>
